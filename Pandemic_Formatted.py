@@ -230,38 +230,35 @@ class city(object):
         if disease == "":
             disease = self.default_disease
         if self.quarantine[disease]:
-            print(self.name + " is under quarantine.")
+            print("%s is under quarantine." %self.name)
             return outbreaks
         elif disease in eradicated:
-            print(disease + " is eradicated and will not infect " + self.name)
+            print(
+                "%s is eradicated and will not infect %s" 
+                  %(disease, self.name)
+                  )
             return outbreaks
-        print(
-            self.name
-            + " ("
-            + self.default_disease
-            + ") has been infected with "
-            + str(quantity)
-            + " "
-            + disease
-            + " cube(s) ["
-            + str(self.diseases[disease] + quantity)
-            + " total]"
-        )
+        print("%s (%s) has been infected with %i %s cube(s) [%s total]"
+              %(self.name,
+                self.default_disease, 
+                quantity, 
+                disease,
+                self.diseases[disease]+quantity
+                )
+              )
 
         # May need to move this to game function in order to track outbreaks
-        if self.diseases[disease] + quantity < 4:
+        if self.diseases[disease] + quantity < 4:  #Change to constant CUBE_LIMIT+1
             self.diseases[disease] += quantity
             disease_cubes[disease] -= quantity
-            print(
-                disease
-                + " disease cubes changes from "
-                + str(disease_cubes[disease] + quantity)
-                + " to "
-                + str(disease_cubes[disease])
-            )
+            print("%s disease cubes changes from %i to %i"  #Code smell: duplicate print statement with heal()
+                  %(disease,
+                    disease_cubes[disease] + quantity,
+                    disease_cubes[disease])
+                  )
         else:
-            print("Outbreak in " + self.name + "!")
-            self.diseases[disease] = 3
+            print("Outbreak in %s!" %self.name)
+            self.diseases[disease] = 3  #CUBE_LIMIT
             outbreaks += 1
             self.quarantine[disease] = True
             for neighbor in self.neighbors:
@@ -274,13 +271,11 @@ class city(object):
             disease = self.default_disease
         self.diseases[disease] -= quantity
         disease_cubes[disease] += quantity
-        print(
-            disease
-            + " disease cubes changes from "
-            + str(disease_cubes[disease] - quantity)
-            + " to "
-            + str(disease_cubes[disease])
-        )
+        print("%s disease cubes changes from %i to %i"  #Code smell: duplicate
+              %(disease,
+                disease_cubes[disease] - quantity,
+                disease_cubes[disease] + quantity)
+              )
 
     #    def infect_neighbors(self, disease, quantity = 1):
     #        for neighbor in self.neighbors:
@@ -601,18 +596,12 @@ while True:
 player_list = []
 
 for i in range(1, num_players + 1):
-    print("Enter Player " + str(i) + " Name:")
+    print("Enter Player %i Name:" %i)
     player_list.append(input().strip())
 
 print("Enter Difficulty (Easy, Intermediate, Hard):")
 difficulty = input().strip()
 
-# print("Enter Player List:")
-
-
-# num_players = 4
-# player_list = ["Big Al","Bigger Al","Lazy Susan","Debbie Downer"]
-# difficulty = "Intermediate"
 
 ###############################################################################
 # Card Decks:
@@ -683,27 +672,12 @@ infect_deck.shuffle()
 player_discard = card_deck(None)
 infect_discard = card_deck(None)
 
-# print("\nAfter:")
-# print("Player Cards:__________________")
-# for j in player_deck.cards:
-#    print(j.value)
-#
-# print("Infect Cards:__________________")
-# for k in infect_deck.cards:
-#    print(k.value)
-
-##"test" sorting algorithm
-# trial_list = [i for i in range(20)]
-# trial_deck = card_deck(trial_list)
-# trial_deck.shuffle()
-# print([card for card in trial_deck.cards])
-
 ###############################################################################
 # Initial Infections
 
 print("Roles have been assigned:")
 for p in players:
-    print(players[p].name + ": " + players[p].role)
+    print("%s: %s" %(players[p].name,players[p].role))
 
 print("Cities will now be infected")
 
@@ -732,16 +706,10 @@ for p in players:
             max_city = c
             max_player = players[p]
 
-print(
-    "Player '"
-    + max_player.name
-    + "' has the highest population city card ("
-    + max_city.name
-    + ", "
-    + str(max_pop)
-    + ")"
+print("Player %s has the highest population city card (%s, %i)"
+    %(max_player.name, max_city.name, max_pop)
 )
-print("Player '" + max_player.name + "' will go first")
+print("Player '%s' will go first" %max_player.name)
 
 active_player = max_player
 player_ind = player_list.index(active_player.name)
@@ -768,18 +736,20 @@ def infection_status(city="All"):
         try:
             c = cities[city]
         except:
-            print("No city by the name of " + city)
+            print("No city by the name of %s" %city)
             return
-        print(c.name + ": " + str([str(k) + ":" + str(v) for k, v in c.diseases]))
+        print("%s: %s" 
+              %(c.name, str([str(k) + ":" + str(v) for k, v in c.diseases]))
+              )
     else:
         for disease in disease_list:
-            print("\n" + disease + ":")
+            print("\n%i:" %disease)
             for i in range(3, 0, -1):
-                print(str(i) + " cubes:")
+                print("%i cubes:" %i)
                 #                print([c.name+" \n" for c in cities.keys() if c.diseases[disease] == i])
                 for c in cities.values():
                     if c.diseases[disease] == i:
-                        print("    " + c.name)
+                        print("     %s" %c.name)
 
 
 def player_status(p_name=""):
@@ -788,60 +758,47 @@ def player_status(p_name=""):
     else:
         p = players[p_name]
     print("\nCurrent Player Status\n")
-    print("Player: " + p.name + " (" + p.role + ")")
-    print("Location: " + p.location.name)
+    print("Player: %s (%s)" %(p.name, p.role))
+    print("Location: %s" %p.location.name)
     print("Player Cards: ")
     for c in p.cards.keys():
         try:
-            print(c + " (" + p.cards[c].disease + ")")
+            print("%s (%s)" %(c, p.cards[c].disease))
         except:
-            print(c + " (" + p.cards[c].instruction + ")")
+            print("%s (%s)" %(c, p.cards[c].instruction))
 
 
 def team_status():
     print("\nCurrent Game Status:\n")
-    print("Outbreaks: " + str(outbreaks) + "/8")
+    print("Outbreaks: %i/8" %outbreaks)  #Code smell: Magic number
     print("Cubes Remaining:\n")
     for disease in disease_list:
-        print(disease + ": " + str(disease_cubes[disease]) + "/24")
-    print(
-        "Player cards remaining: "
-        + str(len(player_deck.cards))
-        + " ("
-        + str(num_epidemics)
-        + "/"
-        + str(epidemics[difficulty])
-        + " epidemics remaining)"
+        print("%s: %i/24" %(disease, disease_cubes[disease]))  #Code smell: Magic number
+    print("Player cards remaining: %i (%i/%i epidemics remaining)"
+          %(len(player_deck.cards), num_epidemics,epidemics[difficulty])
     )
-    print("Infection rate: " + str(infection_rate) + " cities per turn")
-    print(
-        "Diseases cured: "
-        + str(len(cured))
-        + "/"
-        + str(len(disease_list))
-        + " ("
-        + str(len(eradicated))
-        + " eradicated)"
+    print("Infection rate: %i cities per turn" %infection_rate)
+    print("Diseases cured: %i/%i (%i eradicated)"
+          %(len(cured), len(disease_list), len(eradicated))
     )
-    print("Current Player: " + current_player.name + " (" + current_player.role + ")")
+    print("Current Player: %s (%s)"
+          %(current_player.name, current_player.role)
+    )
 
 
 def card_status():
     for player_name in player_list:
-        print(
-            "\nPlayer "
-            + player_name
-            + " ("
-            + players[player_name].role
-            + " - "
-            + players[player_name].location.name
-            + ")"
+        print("\nPlayer %s (%s - %s)"
+              %(player_name, 
+                players[player_name].role,
+                players[player_name].location.name
+                )
         )
         for crd in players[player_name].cards.values():
             try:
-                print(crd.value + " (" + crd.disease + ")")
+                print("%s (%s)" %(crd.value, crd.disease))
             except:
-                print(crd.value + ": " + crd.instruction)
+                print("%s (%s)" %(crd.value, crd.instruction))
 
 
 def discarded_player_cards():
@@ -863,12 +820,11 @@ def discarded_infection_cards():
 def locate_players():
     for plyr_name in player_list:
         print(
-            "Player "
-            + plyr_name
-            + " ("
-            + players[plyr_name].role
-            + "): "
-            + players[plyr_name].location.name
+            "Player %s (%s): %s" 
+            %(plyr_name, 
+              players[plyr_name].role, 
+              players[plyr_name].location.name
+              )
         )
 
 
@@ -903,7 +859,8 @@ def check_win():
 
     if len(cured) == len(disease_list):
         print(
-            "All diseases have been cured.  Pandemic has been contained.\nEnter 'Continue' to keep playing:"
+            "All diseases have been cured.
+            "Pandemic has been contained.\nEnter 'Continue' to keep playing:"
         )
         cmd = input().strip()
         if not "continue" in cmd.lower():
@@ -933,9 +890,9 @@ def card_limit(player_name):
         # )
         for c in players[player_name].cards.keys():
             try:
-                print(c + " (" + players[player_name].cards[c].disease + ")")
+                print("%s (%s)" %(c, players[player_name].cards[c].disease))
             except:
-                print(c + " (" + players[player_name].cards[c].instruction + ")")
+                print("%s (%s)" %(c, players[player_name].cards[c].instruction))
         print("Enter city card to discard or event card to play.")
         crd = input().strip()
 
@@ -976,22 +933,15 @@ def medic_auto_heal():
             cur_city_name = players[plyr_name].location.name
             for d in cured:
                 if cities[cur_city_name].diseases[d] > 0:
-                    print(
-                        "Medic has healed "
-                        + str(cities[cur_city_name].diseases[d])
-                        + " "
-                        + d
-                        + " cubes from "
-                        + cur_city_name
-                        + " automatically."
+                    print("Medic has healed %i %s cubes from %s automatically."
+                          %(cities[cur_city_name].diseases[d],
+                            d,
+                            cur_city_name)
                     )
                     cities[cur_city_name].heal(
                         disease=d, quantity=cities[cur_city_name].diseases[d]
                     )
                     check_eradicated()
-    #                    if disease_cubes[d] == 24:
-    #                        eradicated.append(d)
-    #                        print(d+" has been eradicated")
     return
 
 
@@ -1012,13 +962,15 @@ def government_grant():
 
         if research_stations == 0:
             print(
-                "No available research stations.  Enter city to remove research station from first."
+                "No available research stations.  
+                "Enter city to remove research station from first."
             )
             com = input().strip()
             try:
                 research_stations = cities[com].remove_rs(research_stations)
             except:
-                print("City name not recognized.  Cancel building research station")
+                print("City name not recognized.  
+                      "Cancel building research station")
                 return False
 
         research_stations = cities[city_name].build(research_stations)
@@ -1048,13 +1000,13 @@ def forecast():
     print("Top 6 cards are:")
     for c_ind in range(6):
         crd = infect_deck.draw_top()
-        print(crd.value + " (" + crd.city.default_disease + ")")
+        print("%s (%s)" %(crd.value, crd.city.default_disease))
         top_6_list.append(crd)
 
     new_6_list = []
     c_new_ind = 1
     while c_new_ind in range(1, 7):
-        print("Enter card for position " + str(c_new_ind) + " (1 will be drawn next)")
+        print("Enter card for position %i (1 will be drawn next)" %c_new_ind)
         c_val = input().strip()
         if c_val == "Stop" or c_val == "stop":
             infect_deck = combine([card_deck(top_6_list), infect_deck])
@@ -1087,7 +1039,7 @@ def airlift():
         players[player_name].move(dest_city_name)
 
     except:
-        print("Unable to airlift " + player_name + " to " + dest_city_name)
+        print("Unable to airlift %s to %s" %(player_name, dest_city_name))
         return False
 
     # Medic 2nd ability
@@ -1101,7 +1053,7 @@ def resilient_population():
     print("Current infection discard pile:")
     global infect_discard
     for crd in infect_discard.cards:
-        print(crd.value + " (" + crd.city.default_disease + ")")
+        print("%s (%s)" %(crd.value, crd.city.default_disease))  #Code smells: possible duplicate print statement - use fuction?
 
     print("Enter infection card to remove from game:")
     crd_value = input().strip()
@@ -1180,10 +1132,9 @@ def action(i):
                             found = True
                             active_player = players[plyr_name]
                             print(
-                                "Current player is 'Dispatcher'.  Move player '"
-                                + plyr_name
-                                + "' to "
-                                + dest_city_name
+                                "Current player is 'Dispatcher'.  
+                                "Move player '%s' to %s"
+                                %(plyr_name, dest_city_name)
                             )
                             break
                 if not found:
@@ -1193,12 +1144,12 @@ def action(i):
                 act_plyr_name = input().strip()
                 try:
                     active_player = players[act_plyr_name]
-                    print("Active player is " + act_plyr_name)
+                    print("Active player is %s" %act_plyr_name)
 
                 except:
                     print(
-                        "Player name not recognized. Defaulting to "
-                        + current_player.name
+                        "Player name not recognized. Defaulting to %s"
+                        %current_player.name
                     )
                     active_player = players[current_player.name]
                 print("Enter destination city:")
@@ -1220,10 +1171,8 @@ def action(i):
         # Drive/Ferry (1 move) - must be to an adjacent city
         if dest_city in cities[active_player.location.name].neighbors:
             print(
-                "Drive/Ferry from "
-                + active_player.location.name
-                + " to "
-                + dest_city.name
+                "Drive/Ferry from %s to %s"
+                %(active_player.location.name, dest_city.name)
             )
             active_player.move(dest_city.name)
 
@@ -1238,42 +1187,21 @@ def action(i):
         # Shuttle Flight (1 move) - must be research station in both cities
         elif active_player.location.rs and dest_city.rs:
             print(
-                "Shuttle Flight from "
-                + active_player.location.name
-                + " to "
-                + dest_city.name
+                "Shuttle Flight from %s to %s"
+                %(active_player.location.name, dest_city.name)
             )
             active_player.move(dest_city.name)
-
-        #            #Medic 2nd ability
-        #            #ADD SEPARATE FUNCTION (& RELOCATE CALL TO END OF 'MOVE' FUNCTION??)
-        #            ###################################################################
-        #            if active_player.role == "Medic":
-        #                for d in cured:
-        #                    print("Medic has cured "+d+" from "+dest_city+" automatically")
-        #                    dest_city.heal(disease = d, quantity = dest_city.diseases[d])
-        #            return 1
 
         # Dispatcher ability: Move any pawn (active) to any city with another pawn
         elif current_player.role == "Dispatcher" and len(dest_city.pawns) > 0:
             print(
-                "Dispatcher sends "
-                + active_player.name
-                + " from "
-                + active_player.location.name
-                + " to "
-                + dest_city.name
+                "Dispatcher sends %s from %s to %s"
+                %(active_player.name,
+                active_player.location.name,
+                dest_city.name)
             )
             active_player.move(dest_city.name)
 
-        #            #Medic 2nd ability
-        #            if active_player.role == "Medic":
-        #                for d in cured:
-        #                    print("Medic has cured "+d+" from "+dest_city+" automatically")
-        #                    dest_city.heal(disease = d, quantity = dest_city.diseases[d])
-        #            return 1
-
-        # Direct Flight or Charter Flight (1 move)
         else:
 
             try:
@@ -1281,9 +1209,9 @@ def action(i):
                 # Direct Flight - player has destination city card
                 if dest_city.name in current_player.cards.keys():
                     print(
-                        "Direct Flight to "
-                        + dest_city.name
-                        + " requires discarding player card.  Y to confirm"
+                        "Direct Flight to %s requires discarding player card.
+                        "Y to confirm"
+                        %dest_city.name
                     )
                     con = input().strip()
                     if con.lower() == "y":
@@ -1304,11 +1232,9 @@ def action(i):
                 # Charter Flight - player has origin city card
                 if active_player.location.name in current_player.cards.keys():
                     print(
-                        "Charter Flight to "
-                        + dest_city.name
-                        + " requires discarding "
-                        + active_player.location.name
-                        + " player card.  Y to confirm"
+                        "Charter Flight to %s requires discarding %s player card.
+                        "Y to confirm"
+                        %(dest_city.name, active_player.location.name)
                     )
                     con = input().strip()
                     if con.lower() == "y":
@@ -1321,27 +1247,21 @@ def action(i):
                         print("Move cancelled")
                         return 0
 
-                #                        #Medic 2nd ability
-                #                        if active_player.role == "Medic":
-                #                            for d in cured:
-                #                                print("Medic has cured "+d+" from "+dest_city+" automatically")
-                #                                dest_city.heal(disease = d, quantity = dest_city.diseases[d])
                 # Operations Expert 2nd ability - from a research station, may move to any other city by discarding any city card
                 elif (
                     current_player.role == "Operations Expert"
                     and current_player.location.rs
                 ):
                     print(
-                        "Operations Expert may discard any card to fly from the "
-                        + current_player.location.name
-                        + " research station to "
-                        + dest_city.name
-                        + "."
+                        "Operations Expert may discard any card to fly from
+                        "the %s research station to %s"
+                        %(current_player.location.name, dest_city.name)
                     )
                     print("Player cards:")
                     for c_name in current_player.cards.keys():
                         if type(current_player.cards[c_name]) is city_card:
-                            print(c_name + " (" + cities[c_name].default_disease + ")")
+                            print("%s (%s)" 
+                                  %(c_name, cities[c_name].default_disease))
                     print("Enter card to discard, or anything else to cancel.")
                     crd_name = input().strip()
                     try:
@@ -1360,11 +1280,6 @@ def action(i):
                 return 0
 
         medic_auto_heal()
-        #        #Medic 2nd ability
-        #        if active_player.role == "Medic":
-        #            for d in cured:
-        #                print("Medic has cured "+d+" from "+dest_city+" automatically")
-        #                dest_city.heal(disease = d, quantity = dest_city.diseases[d])
         return 1
 
     # Build Research Station
@@ -1376,7 +1291,8 @@ def action(i):
         global player_discard
 
         if current_player.location.rs:
-            print("Already a research station in " + current_player.location.name)
+            print("Already a research station in %s" 
+                  %current_player.location.name)
             return 0
 
         bld = False
@@ -1386,16 +1302,14 @@ def action(i):
             bld = True
             crd_reqd = False
             print(
-                "Build research station in "
-                + current_player.location.name
-                + " does not require a card."
+                "Build research station in %s does not require a card."
+                %current_player.location.name
             )
         elif active_player.location.name in current_player.cards.keys():
             bld = True
             print(
-                "Build research station in "
-                + current_player.location.name
-                + " requires discarding player card."
+                "Build research station in %s requires discarding player card."
+                %current_player.location.name
             )
         try:
             assert bld
@@ -1404,7 +1318,8 @@ def action(i):
             if con.lower() == "y":
                 if research_stations == 0:
                     print(
-                        "No available research stations.  Enter city to remove research station from first."
+                        "No available research stations.
+                        "Enter city to remove research station from first."
                     )
                     cty_name = input().strip()
                     try:
@@ -1413,7 +1328,8 @@ def action(i):
                         )
                     except:
                         print(
-                            "City name not recognized.  Cancel building research station"
+                            "City name not recognized.
+                            "Cancel building research station"
                         )
                         return 0
                 if crd_reqd:
@@ -1476,31 +1392,20 @@ def action(i):
 
         if cards_attained < cards_required:
             print(
-                "Only "
-                + str(cards_attained)
-                + " "
-                + cure_disease
-                + " cards attained ("
-                + str(cards_required)
-                + " required)"
+                "Only %i %s cards attained (%i required)"
+                %(cards_attained, cure_disease, cards_required)
             )
             return 0
 
         # If more cards are present than needed, allow player to select which cards of the cured disease to hold onto
         elif cards_attained > cards_required:
             print(
-                "Only "
-                + str(cards_required)
-                + " "
-                + cure_disease
-                + " cards required ("
-                + str(cards_attained)
-                + " attained)"
+                "Only %i %s cards required (%s attained)"
+                %(cards_required, cure_disease, cards_attained)
             )
             print(
-                "Choose which "
-                + str(cards_attained - cards_required)
-                + " cards to keep"
+                "Choose which %i cards to keep"
+                %(cards_attained - cards_required)
             )
             for k in range(cards_attained - cards_required):
                 c_k = input().strip()
@@ -1508,11 +1413,9 @@ def action(i):
                     del cd[c_k]
                 except:
                     print(
-                        "City name not recognized. "
-                        + str(cards_required)
-                        + " "
-                        + cure_disease
-                        + " cards will be selected by hand order."
+                        "City name not recognized.
+                        "%i %s cards will be selected by hand order"
+                        %(cards_required, cure_disease)
                     )
                     break
         cards_to_cure = []
@@ -1526,7 +1429,7 @@ def action(i):
             num += 1
         cured.append(cure_disease)
 
-        print(cure_disease + " disease has been cured")
+        print("%s disease has been cured" %cure_disease)
 
         check_eradicated()
 
@@ -1547,18 +1450,13 @@ def action(i):
         except:
             disease_name = current_player.location.default_disease
             print(
-                "No disease recognized.  Checking default disease for "
-                + current_player.location.name
-                + " ("
-                + disease_name
-                + ")"
+                "No disease recognized.  Checking default disease for %s (%s)"
+                %(current_player.location.name, disease_name)
             )
         if not (current_player.location.diseases[disease_name] > 0):
             print(
-                "No "
-                + disease_name
-                + " cubes present in "
-                + current_player.location.name
+                "No %s cubes present in %s"
+                %(disease_name, current_player.location.name)
             )
             return 0
 
@@ -1571,23 +1469,15 @@ def action(i):
 
         try:
             current_player.location.heal(disease=disease_name, quantity=quant)
-            print(
-                str(quant)
-                + " "
-                + disease_name
-                + " cubes have been removed from "
-                + current_player.location.name
-                + " ["
-                + str(current_player.location.diseases[disease_name])
-                + " "
-                + disease_name
-                + " cubes remain]"
+            print("%i %s cubes have been removed from %s [%i %s cubes remain]"
+                  %(quant, 
+                    disease_name, 
+                    current_player.location.name, 
+                    current_player.location.diseases[disease_name],
+                    disease_name)
             )
 
             check_eradicated()
-            #            if disease_name in cured and disease_cubes[disease_name] == 24:
-            #                eradicated.append(disease_name)
-            #                print(disease_name+" has been eradicated")
             return 1
         except:
             print("Failure to heal.")
@@ -1625,14 +1515,16 @@ def action(i):
         # Make sure giving player has the card
         if city_name not in current_player.cards.keys():
             print(
-                "Giving player must have the city card in order to 'Share Knowledge'."
+                "Giving player must have the city card
+                "in order to 'Share Knowledge'."
             )
             return 0
 
         # Ensure both players are in the same city
         if current_player.location != players[player_name].location:
             print(
-                "Giving and receiving players must be in the same city in order to 'Share Knowledge'."
+                "Giving and receiving players must be in the same city 
+                "in order to 'Share Knowledge'."
             )
             return 0
 
@@ -1642,18 +1534,15 @@ def action(i):
             and current_player.role != "Researcher"
         ):
             print(
-                "City card must match current location OR current player must be a 'Researcher'."
+                "City card must match current location OR current player
+                "must be a 'Researcher'."
             )
             return 0
 
         crd = current_player.play_card(city_name)
         players[player_name].cards[city_name] = crd
-        print(
-            city_name
-            + " city card has been transferred from "
-            + current_player.name
-            + " to "
-            + player_name
+        print("%s city card has been transferred from %s to %s"
+            %(city_name, current_player.name, player_name)
         )
 
         card_limit(player_name)
@@ -1682,7 +1571,7 @@ def action(i):
                     from_player_name = plyr
                     break
             if from_player_name == "":
-                print("No player found with " + city_name + " card")
+                print("No player found with %s card" %city_name)
                 return 0
         except:
             print("City name not recognized.")
@@ -1691,23 +1580,21 @@ def action(i):
         # Ensure both players are in the same city
         if current_player.location != players[from_player_name].location:
             print(
-                "In order to 'Take', player must be in the same city as 'Researcher'."
+                "In order to 'Take', player must be in the 
+                "same city as 'Researcher'."
             )
             return 0
 
         # Ensure player being taken from is a 'Researcher'
         if players[from_player_name].role != "Researcher":
-            print("In order to 'Take', player taken from must be 'Researcher'.")
+            print("In order to 'Take', player taken from must 
+                  "be 'Researcher'.")
             return 0
 
         crd = players[from_player_name].play_card(city_name)
         current_player.cards[city_name] = crd
-        print(
-            city_name
-            + " city card has been transferred from "
-            + from_player_name
-            + " to "
-            + current_player.name
+        print("%s city card has been transferred from %s to %s"  #Code smells: possible duplicate
+            %(city_name, from_player_name, current_player.name)
         )
 
         card_limit(current_player.name)
@@ -1746,7 +1633,7 @@ def action(i):
         elif "retrieve" in cmd:
             return i + retrieve(command)
         elif "skip" in cmd:
-            return 4
+            return 4  #Magic number, convert to constant NUM_TURNS
         else:
             print("Command not recognized")
             return i
@@ -1759,7 +1646,7 @@ win = False
 j = 0  # Turns
 while (
     not win
-    and outbreaks < 8
+    and outbreaks < 8  #Magic number, convert to MAX_OUTBREAKS
     and len(player_deck.cards) > 0
     and min([a for a in disease_cubes.values()]) >= 0
 ):
@@ -1771,7 +1658,7 @@ while (
     #    summary_status()
     detail_status()
 
-    print("Player '" + active_player.name + "' turn")
+    print("Player %s's turn" %active_player.name)
 
     infect_cities = True
 
@@ -1782,61 +1669,13 @@ while (
         if check_win():
             break
 
-        #        if current_player.role == "Dispatcher":
-        #            print("Enter player to move")
-        #            a_p = input().strip()
-        #            try:
-        #                active_player = players[a_p]
-        #            except:
-        #                print("Player name not recognized - defaulting to current player action")
-        #                active_player = current_player
-
-        print("Complete (" + str(4 - i) + ") Actions")
+        print("Complete (%i) Actions" %(4 - i))
         i = action(i)
-
-    #        p_act = input().strip()
-
-    ##            print("Action detected")
-    #
-    #
-    #            if "Play" in p_act or "play" in p_act:
-    #
-    #
-    #            elif "Move" in p_act or "move" in p_act:
-    #
-    #
-    #            #Build a research station
-    #            elif "Build" in p_act or "build" in p_act:
-    #
-    #
-    #            #Discover a cure
-    #            elif "Cure" in p_act or "cure" in p_act:
-    #
-    #
-    #
-    #            #Treat/Heal disease
-    #            elif "Treat" in p_act or "treat" in p_act or "Heal" in p_act or "heal" in p_act:
-    #
-    #
-    #            #Share knowledge ("Share" or "Take")
-    #            #"Share" (give player card to another player): "Share "+city_name+" "+receiving_player_name
-    #            elif "Share" in p_act or "share" in p_act:
-    #
-    #
-    #            #"Take" (take player card from another player - requires that player taken from is "Researcher"): "Take "+city_name
-    #            elif "Take" in p_act or "take" in p_act:
-    #
-    #
-    #            elif "Skip" in p_act or "skip" in p_act:
-    #                i = 4
-    #                continue
 
     win = check_win()
     if win:
         break
 
-    # MOVE THIS CODE TO "impose_quarantine()"
-    # q_dict = {"Red":[list of cities under red quarantine], "Blue":[...]}
     q_dict = {}
     for disease in disease_list:
         q_dict[disease] = []
@@ -1886,18 +1725,17 @@ while (
         next_card = current_player.draw_card(player_deck)
         try:
             print(
-                "Player "
-                + current_player.name
-                + " draws "
-                + next_card.value
-                + " ("
-                + next_card.disease
-                + ") card"
+                "Player %s draws %s (%s) card" 
+                %(current_player.name,
+                  next_card.value,
+                  next_card.disease)
+                )
             )
         except:
             print(
-                "Player " + current_player.name + " draws " + next_card.value + " card"
-            )
+                "Player %s draws %s card"
+                %(current_player.name, next_card.value)
+                )
         if next_card.value == "Epidemic!":
             next_card.play()
             player_discard.add_card(next_card)
@@ -1977,7 +1815,7 @@ while (
     j += 1
 
 
-if outbreaks >= 8:
+if outbreaks >= 8:  #convert to constant MAX_OUTBREAKS
     print("Game over - too many outbreaks")
 if len(player_deck.cards) == 0:
     print("Game over - no player cards left")
