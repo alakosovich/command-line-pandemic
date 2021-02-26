@@ -859,8 +859,8 @@ def check_win():
 
     if len(cured) == len(disease_list):
         print(
-            "All diseases have been cured.
-            "Pandemic has been contained.\nEnter 'Continue' to keep playing:"
+            """All diseases have been cured.
+            Pandemic has been contained.\nEnter 'Continue' to keep playing:"""
         )
         cmd = input().strip()
         if not "continue" in cmd.lower():
@@ -962,15 +962,15 @@ def government_grant():
 
         if research_stations == 0:
             print(
-                "No available research stations.  
-                "Enter city to remove research station from first."
+                """No available research stations.  
+                Enter city to remove research station from first."""
             )
             com = input().strip()
             try:
                 research_stations = cities[com].remove_rs(research_stations)
             except:
-                print("City name not recognized.  
-                      "Cancel building research station")
+                print("""City name not recognized.  
+                      Cancel building research station""")
                 return False
 
         research_stations = cities[city_name].build(research_stations)
@@ -1132,8 +1132,8 @@ def action(i):
                             found = True
                             active_player = players[plyr_name]
                             print(
-                                "Current player is 'Dispatcher'.  
-                                "Move player '%s' to %s"
+                                """Current player is 'Dispatcher'.  
+                                Move player '%s' to %s"""
                                 %(plyr_name, dest_city_name)
                             )
                             break
@@ -1209,8 +1209,8 @@ def action(i):
                 # Direct Flight - player has destination city card
                 if dest_city.name in current_player.cards.keys():
                     print(
-                        "Direct Flight to %s requires discarding player card.
-                        "Y to confirm"
+                        """Direct Flight to %s requires discarding player card.
+                        Y to confirm"""
                         %dest_city.name
                     )
                     con = input().strip()
@@ -1232,8 +1232,8 @@ def action(i):
                 # Charter Flight - player has origin city card
                 if active_player.location.name in current_player.cards.keys():
                     print(
-                        "Charter Flight to %s requires discarding %s player card.
-                        "Y to confirm"
+                        """Charter Flight to %s requires discarding %s player card.
+                        Y to confirm"""
                         %(dest_city.name, active_player.location.name)
                     )
                     con = input().strip()
@@ -1253,8 +1253,8 @@ def action(i):
                     and current_player.location.rs
                 ):
                     print(
-                        "Operations Expert may discard any card to fly from
-                        "the %s research station to %s"
+                        """Operations Expert may discard any card to fly from
+                        the %s research station to %s"""
                         %(current_player.location.name, dest_city.name)
                     )
                     print("Player cards:")
@@ -1318,8 +1318,8 @@ def action(i):
             if con.lower() == "y":
                 if research_stations == 0:
                     print(
-                        "No available research stations.
-                        "Enter city to remove research station from first."
+                        """No available research stations.
+                        Enter city to remove research station from first."""
                     )
                     cty_name = input().strip()
                     try:
@@ -1328,8 +1328,8 @@ def action(i):
                         )
                     except:
                         print(
-                            "City name not recognized.
-                            "Cancel building research station"
+                            """City name not recognized.
+                            Cancel building research station"""
                         )
                         return 0
                 if crd_reqd:
@@ -1413,8 +1413,8 @@ def action(i):
                     del cd[c_k]
                 except:
                     print(
-                        "City name not recognized.
-                        "%i %s cards will be selected by hand order"
+                        """City name not recognized.
+                        %i %s cards will be selected by hand order"""
                         %(cards_required, cure_disease)
                     )
                     break
@@ -1515,16 +1515,16 @@ def action(i):
         # Make sure giving player has the card
         if city_name not in current_player.cards.keys():
             print(
-                "Giving player must have the city card
-                "in order to 'Share Knowledge'."
+                """Giving player must have the city card
+                in order to 'Share Knowledge'."""
             )
             return 0
 
         # Ensure both players are in the same city
         if current_player.location != players[player_name].location:
             print(
-                "Giving and receiving players must be in the same city 
-                "in order to 'Share Knowledge'."
+                """Giving and receiving players must be in the same city 
+                in order to 'Share Knowledge'."""
             )
             return 0
 
@@ -1534,8 +1534,8 @@ def action(i):
             and current_player.role != "Researcher"
         ):
             print(
-                "City card must match current location OR current player
-                "must be a 'Researcher'."
+                """City card must match current location OR current player
+                must be a 'Researcher'."""
             )
             return 0
 
