@@ -1,0 +1,145 @@
+PANDEMIC!!!!
+
+PSEUDO-CODE
+
+#########################################
+
+#GAME SETUP DATA STRUCTURE INDEX:
+
+#City_Dict is a dictionary of all eligible cities to be chosen to used in the game, where each value is a list of latitude and longitude coordinates
+#{CityA: [LatA, LongA], CityB: [LatB, LongB],...}
+
+#City_Graph is a dictionary of dictionaries indicating connections between all cities (bi-directional):
+#{CityA: {CityB: 1, CityC: 1, ...}, CityB: {CityA: 1, CityD: 1,...},...}
+
+#City_List is the list of cities which will be used in the game setup
+#[CityA, CityB, CityC,...]
+
+#Disease_Graph is a dictionary containing the quantity of disease cubes in each city:
+#{CityA: 0, CityB: 2, CityC: 1, ...}
+
+#Diseased_Cities is a dictionary listing the disease associated with each city
+#{CityA: Disease1, CityB: Disease2, CityC: Disease1,...}
+
+#########################################
+
+#GAME SETUP UTILITY FUNCTIONS
+MAKE_LINK (City_Graph, CityA, CityB):
+	If CityA not in City_Graph:
+		City_Graph[CityA] = {}
+	City_Graph[CityA][CityB] = 1
+	If CityB not in City_Graph:
+		City_Graph[CityB] = {}
+	City_Graph[CityB][CityA] = 1
+	Return City_Graph
+
+DIST_BETWEEN (CityA, CityB):
+	I
+
+#########################################
+
+#GAME SETUP PRIMARY FUNCTIONS
+
+ELIGIBLE_CITIES:
+	Import list of cities over 400,000 population
+	Return Dict "City_Dict" City Name: Latitude, Longitude
+	
+USED_CITIES (City_Dict):
+	Select random city to start at
+	Add city if DIST BETWEEN (:,city) > 500 miles
+	Repeat until ELIGIBLE CITIES is exhausted
+	RETURN "City_List"
+
+CONNECT_MAP (City_List):
+	Connect each city [MAKE_LINK] to its (2) nearest neighbors
+	Repeat for all cities
+	Connect each city [MAKE_LINK] to nearest cities within 1000 miles, ending when city has (4) connections.  Do not connect any city with (4) or more connections already
+	RETURN Dict "City_Graph" = {CityA Name: {CityB Name: 1, CityC Name: 1,...}, CityB Name: {CityA Name,...}}
+
+ASSIGN_DISEASES (Connected_Map, City_List):
+	Diseased = []
+	Get number_diseases
+	Copy Connected_Map to Temp_Map (temp dict)
+	Define list of diseases
+	Select random city from Temp_Map to start at
+	Assign city to Diseased_Cities(disease)
+	#Want Diseased_Cities to look like: {CityA: Disease1, CityB: Disease2, CityC: Disease1,...}
+	Add city to Diseased
+	Remove city and all immediate neighbors from Temp_Map
+	Reduce number_diseases by 1
+	Repeat until all diseases assigned to a unique city
+	#Dict "Diseased_Cities" Disease1: CityA; Disease2: CityB;...
+	disease_max = len(City_List)/number_diseases + 3
+	Use breadth first search to seek neighbors of city in disease
+	while (len(Diseased_Cities[disease]) < disease_max) & (neighbors not in Diseased > 0))
+	Assign neighbors to Diseased_Cities[disease] if neighbors not in Diseased
+	Repeat (number_diseases - 1) times
+	#Final disease
+	For all cities not in diseased, add to Diseased_Cities[final disease]
+	Return Diseased_Cities
+	
+PLOT_MAP (City_Dict, Connected_Map, Diseased_Cities):
+	For all cities in Connected_Map.values()
+	Plot "City Name", Latitude, Longitude, Color(disease)
+	For all cities in Connected_Map.values()
+	Plot city connections to neighbors if not already connected
+
+#########################################
+
+#GAMEPLAY DATA STRUCTURE INDEX
+
+#The TYP Card Index is an ordered list of dictionaries, with each dictionary representing a discarded card.
+#[City:{City: CityA}, City:{City: CityB}, Event:{Event: Event1, Used: 1}, ... ####ARE THERE OTHER TYPES OF CARDS???####
+
+#Discard_Pile is a list of cit
+
+#########################################
+
+#GAMEPLAY UTILITY FUNCTIONS
+
+GET_NEIGHBORS (Connected_Map, CityA):
+	Return List Connected_Map[CityA]
+
+SPREAD_DISEASE (Disease_Graph, City, Quantity):
+	If Disease_Graph[City] + Quantity > 3:
+		Disease_Graph[City] = 3
+		Next_Diseased = Get_Neighbors[City]
+		For Neighbor in Next_Diseased:
+			Spread_Disease(Disease_Graph, Neighbor, 1)
+	Else:
+		Disease_Graph[City] += Quantity
+	Return
+
+PROPULGATE_EPIDEMIC (
+
+#########################################
+
+#GAMEPLAY PRIMARY FUNCTIONS
+
+
+
+#########################################
+
+#GAME CODE
+
+City_List = USED CITIES (ELIGIBLE CITIES)
+Connected_Map = CONNECT MAP (City_List)
+Diseased_Cities = ASSIGN DISEASES (Connected_Map, City_List)
+	
+	
+#########################################	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
