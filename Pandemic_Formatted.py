@@ -168,8 +168,7 @@ class event_card(object):
             self.playfunc = "resilient_population()"
 
     def play(self):
-        exec("a = " + self.playfunc)
-        return a
+        return getattr(self, self.playfunc)
 
 
 class city_card(object):
@@ -189,7 +188,7 @@ class epidemic_card(object):
         self.playfunc = "epidemic()"
 
     def play(self):
-        exec(self.playfunc)
+        getattr(self, self.playfunc)
 
 
 class infect_card(object):
