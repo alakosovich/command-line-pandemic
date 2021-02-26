@@ -1580,15 +1580,15 @@ def action(i):
         # Ensure both players are in the same city
         if current_player.location != players[from_player_name].location:
             print(
-                "In order to 'Take', player must be in the 
-                "same city as 'Researcher'."
+                """In order to 'Take', player must be in the 
+                same city as 'Researcher'."""
             )
             return 0
 
         # Ensure player being taken from is a 'Researcher'
         if players[from_player_name].role != "Researcher":
-            print("In order to 'Take', player taken from must 
-                  "be 'Researcher'.")
+            print("""In order to 'Take', player taken from must 
+                  be 'Researcher'.""")
             return 0
 
         crd = players[from_player_name].play_card(city_name)
@@ -1730,7 +1730,6 @@ while (
                   next_card.value,
                   next_card.disease)
                 )
-            )
         except:
             print(
                 "Player %s draws %s card"
