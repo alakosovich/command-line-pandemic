@@ -168,7 +168,7 @@ class event_card(object):
             self.playfunc = "resilient_population()"
 
     def play(self):
-        return getattr(self, self.playfunc)
+        return eval(self.playfunc)
 
 
 class city_card(object):
@@ -188,7 +188,7 @@ class epidemic_card(object):
         self.playfunc = "epidemic()"
 
     def play(self):
-        getattr(self, self.playfunc)
+        eval(self.playfunc)
 
 
 class infect_card(object):
@@ -274,7 +274,7 @@ class city(object):
         print("%s disease cubes changes from %i to %i"  #Code smell: duplicate
               %(disease,
                 disease_cubes[disease] - quantity,
-                disease_cubes[disease] + quantity)
+                disease_cubes[disease])
               )
 
     #    def infect_neighbors(self, disease, quantity = 1):
@@ -743,7 +743,7 @@ def infection_status(city="All"):
               )
     else:
         for disease in disease_list:
-            print("\n%i:" %disease)
+            print("\n%s:" %disease)
             for i in range(3, 0, -1):
                 print("%i cubes:" %i)
                 #                print([c.name+" \n" for c in cities.keys() if c.diseases[disease] == i])
@@ -859,8 +859,9 @@ def check_win():
 
     if len(cured) == len(disease_list):
         print(
-            """All diseases have been cured.
-            Pandemic has been contained.\nEnter 'Continue' to keep playing:"""
+            "All diseases have been cured. "
+            "Pandemic has been contained."
+            "\nEnter 'Continue' to keep playing:"
         )
         cmd = input().strip()
         if not "continue" in cmd.lower():
@@ -962,15 +963,15 @@ def government_grant():
 
         if research_stations == 0:
             print(
-                """No available research stations.  
-                Enter city to remove research station from first."""
+                "No available research stations. "
+                "Enter city to remove research station from first."
             )
             com = input().strip()
             try:
                 research_stations = cities[com].remove_rs(research_stations)
             except:
-                print("""City name not recognized.  
-                      Cancel building research station""")
+                print("City name not recognized. "
+                      "Cancel building research station")
                 return False
 
         research_stations = cities[city_name].build(research_stations)
@@ -1087,7 +1088,7 @@ def action(i):
     # Play Card
     def play(command):
         try:
-            space_ind = command.index(" ")
+            space_ind = command.index(" ")  #Switch to split command
             event_card_value = command[space_ind + 1 :]
             owner_name = ""
             for plyr in player_list:
@@ -1118,7 +1119,7 @@ def action(i):
 
         if current_player.role == "Dispatcher":
             try:
-                space_ind = command.index(" ")
+                space_ind = command.index(" ")  #Code smells: change to split
                 rem_cmd = command[space_ind + 1 :]
                 found = False
                 for plyr_name in players.keys():
@@ -1131,9 +1132,8 @@ def action(i):
                         else:
                             found = True
                             active_player = players[plyr_name]
-                            print(
-                                """Current player is 'Dispatcher'.  
-                                Move player '%s' to %s"""
+                            print("Current player is 'Dispatcher'. "
+                                "Move player '%s' to %s"
                                 %(plyr_name, dest_city_name)
                             )
                             break
@@ -1209,8 +1209,8 @@ def action(i):
                 # Direct Flight - player has destination city card
                 if dest_city.name in current_player.cards.keys():
                     print(
-                        """Direct Flight to %s requires discarding player card.
-                        Y to confirm"""
+                        "Direct Flight to %s requires discarding player card. "
+                        "Y to confirm"
                         %dest_city.name
                     )
                     con = input().strip()
@@ -1232,8 +1232,9 @@ def action(i):
                 # Charter Flight - player has origin city card
                 if active_player.location.name in current_player.cards.keys():
                     print(
-                        """Charter Flight to %s requires discarding %s player card.
-                        Y to confirm"""
+                        "Charter Flight to %s requires discarding "
+                        "%s player card."
+                        "\nY to confirm"
                         %(dest_city.name, active_player.location.name)
                     )
                     con = input().strip()
@@ -1253,8 +1254,8 @@ def action(i):
                     and current_player.location.rs
                 ):
                     print(
-                        """Operations Expert may discard any card to fly from
-                        the %s research station to %s"""
+                        "Operations Expert may discard any card to fly from "
+                        "the %s research station to %s"
                         %(current_player.location.name, dest_city.name)
                     )
                     print("Player cards:")
@@ -1318,8 +1319,8 @@ def action(i):
             if con.lower() == "y":
                 if research_stations == 0:
                     print(
-                        """No available research stations.
-                        Enter city to remove research station from first."""
+                        "No available research stations. "
+                        "Enter city to remove research station from first."
                     )
                     cty_name = input().strip()
                     try:
@@ -1328,8 +1329,8 @@ def action(i):
                         )
                     except:
                         print(
-                            """City name not recognized.
-                            Cancel building research station"""
+                            "City name not recognized. "
+                            "Cancel building research station"
                         )
                         return 0
                 if crd_reqd:
@@ -1413,8 +1414,8 @@ def action(i):
                     del cd[c_k]
                 except:
                     print(
-                        """City name not recognized.
-                        %i %s cards will be selected by hand order"""
+                        "City name not recognized. "
+                        "%i %s cards will be selected by hand order"
                         %(cards_required, cure_disease)
                     )
                     break
@@ -1515,16 +1516,16 @@ def action(i):
         # Make sure giving player has the card
         if city_name not in current_player.cards.keys():
             print(
-                """Giving player must have the city card
-                in order to 'Share Knowledge'."""
+                "Giving player must have the city card"
+                "in order to 'Share Knowledge'."
             )
             return 0
 
         # Ensure both players are in the same city
         if current_player.location != players[player_name].location:
             print(
-                """Giving and receiving players must be in the same city 
-                in order to 'Share Knowledge'."""
+                "Giving and receiving players must be in the same city "
+                "in order to 'Share Knowledge'."
             )
             return 0
 
@@ -1534,8 +1535,8 @@ def action(i):
             and current_player.role != "Researcher"
         ):
             print(
-                """City card must match current location OR current player
-                must be a 'Researcher'."""
+                "City card must match current location OR current player"
+                "must be a 'Researcher'."
             )
             return 0
 
@@ -1580,15 +1581,15 @@ def action(i):
         # Ensure both players are in the same city
         if current_player.location != players[from_player_name].location:
             print(
-                """In order to 'Take', player must be in the 
-                same city as 'Researcher'."""
+                "In order to 'Take', player must be in the "
+                "same city as 'Researcher'."
             )
             return 0
 
         # Ensure player being taken from is a 'Researcher'
         if players[from_player_name].role != "Researcher":
-            print("""In order to 'Take', player taken from must 
-                  be 'Researcher'.""")
+            print("In order to 'Take', player taken from must "
+                  "be 'Researcher'.")
             return 0
 
         crd = players[from_player_name].play_card(city_name)
