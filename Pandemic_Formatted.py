@@ -22,6 +22,7 @@ global num_epidemics
 
 # List of available roles
 global poss_roles
+global roles
 
 # Number of remaining research station tokens
 global research_stations
@@ -59,15 +60,25 @@ global command_list
 
 
 # Assign Game Variables
+#active_player is the player being moved. Generally same as current_player
+# unless e.g. Dispatcher (current player) is moving another player (active)
 active_player = None
 current_player = None
 infect_cities = True
 
 disease_list = ["Blue", "Yellow", "Black", "Red"]
 
+QTY_CUBES = 24
+CUBE_LIMIT = 3
+MAX_OUTBREAKS = 8
+ACTIONS_PER_TURN = 4
+CARDS_TO_CURE = 5
+MAX_CARDS_IN_HAND = 7
+FORECAST_LIMIT = 6
+
 disease_cubes = {}
 for disease in disease_list:
-    disease_cubes[disease] = 24
+    disease_cubes[disease] = QTY_CUBES
 
 outbreaks = 0
 
@@ -230,15 +241,15 @@ class city(object):
         if disease == "":
             disease = self.default_disease
         if self.quarantine[disease]:
-            print("%s is under quarantine." %self.name)
+            print("\n%s is under quarantine." %self.name)
             return outbreaks
         elif disease in eradicated:
             print(
-                "%s is eradicated and will not infect %s" 
+                "\n%s is eradicated and will not infect %s" 
                   %(disease, self.name)
                   )
             return outbreaks
-        print("%s (%s) has been infected with %i %s cube(s) [%s total]"
+        print("\n%s (%s) has been infected with %i %s cube(s) [%s total]"
               %(self.name,
                 self.default_disease, 
                 quantity, 
@@ -248,7 +259,7 @@ class city(object):
               )
 
         # May need to move this to game function in order to track outbreaks
-        if self.diseases[disease] + quantity < 4:  #Change to constant CUBE_LIMIT+1
+        if self.diseases[disease] + quantity < CUBE_LIMIT + 1:
             self.diseases[disease] += quantity
             disease_cubes[disease] -= quantity
             print("%s disease cubes changes from %i to %i"  #Code smell: duplicate print statement with heal()
@@ -258,7 +269,7 @@ class city(object):
                   )
         else:
             print("Outbreak in %s!" %self.name)
-            self.diseases[disease] = 3  #CUBE_LIMIT
+            self.diseases[disease] = CUBE_LIMIT
             outbreaks += 1
             self.quarantine[disease] = True
             for neighbor in self.neighbors:
@@ -298,6 +309,9 @@ class player(object):
     def __init__(self, player_name):
         self.name = player_name
         self.role = None
+        self.actions_per_turn = ACTIONS_PER_TURN
+        self.cards_to_cure = CARDS_TO_CURE
+        self.max_cards = MAX_CARDS_IN_HAND
         self.cards = {}
         self.location = cities["Atlanta"]
 
@@ -316,6 +330,7 @@ class player(object):
 
     def assign_role(self, role):
         self.role = role
+        self.special_ability = roles[role]
 
     def play_card(self, card_name):
         p_c = self.cards[card_name]
@@ -327,17 +342,30 @@ class player(object):
         del self.cards[card_name]
         return p_c
 
-    # Roles:
-    # Scientist: XNeed only (4) city cards of the same color to discover cure
-    # Researcher: XAs an action, may give (or another player may take) any city card from player's hand. Both players must be in the same city.
-    # Medic: XRemove all cubes of one color when treating disease
-    #       Automatically (no action required) remove cubes of cured diseases from the city player occupies (and prevent from being placed there)
-    # Quarantine Specialist: Prevent infecting city player is in and all adjacent cities
-    # Operations Expert: XAs an action, may construct research stations in current city without using the city card
-    #                   Once per turn, as an action, may fly from a city with a research station to any city by discarding any city card
-    # Contingency Planner: As an action, may retrieve discarded event card.  Retrieved card does not apply to hand count.  After playing retrieved card, remove from the game.
-    # Dispatcher: XMay move another player as if your own
-    #            As an action, may move any player to a city with another player
+roles = {
+    "Scientist": ["Need only (4) city cards of the same color to discover cure"],
+    "Researcher": [("As an action, may give (or another player may take) " 
+                    "any city card from player's hand. "
+                    "Both players must be in the same city.")],
+    "Medic": ["Remove all cubes of one color when treating disease",
+              ("Automatically (no action required) remove cubes of ",
+               "cured diseases from the city player occupies "
+               "(and prevent from being placed there)")],
+    "Quarantine Specialist": [("Prevent infecting city player is in and "
+                              "all adjacent cities")],
+    "Operations Expert": [("As an action, may construct research stations in "
+                           "current city without using the city card"),
+                        # ("Once per turn, as an action, may fly from a "
+                          # "city with a research station to any city by "
+                          # "discarding any city card")  #Ability not yet active
+                          ],
+    # "Contingency Planner": [("As an action, may retrieve discarded event card."
+    #                          "Retrieved card does not apply to hand count. "
+    #                          "After playing retrieved card, "
+    #                          "remove from the game. ")],
+    "Dispatcher": ["May move another player as if your own",
+                   ("As an action, may move any player to a city "
+                    "with another player")],
 
     # Expansion Roles???:
     # Field Operative: Once per turn, as an action, may move (1) cube from current city to role card
@@ -348,7 +376,7 @@ class player(object):
     # Epidemiologist: Once during player's turn, may take any city card from another player in the same city
     # Troubleshooter: May view as many upcoming infection cards as the current infection rate
     #                Once per turn, as an action, may fly to a city for which the player owns the city card without discarding the card
-
+    }
 
 ###############################################################################
 # Game Setup
@@ -363,7 +391,14 @@ def assign_roles(player_list):
         players[plyr] = player(plyr)
         l = len(poss_roles)
         ind = random.randint(0, l - 1)
-        players[plyr].role = poss_roles.pop(ind)
+        r = poss_roles.pop(ind)
+        players[plyr].role = r
+        if r == "Scientist":
+            players[plyr].cards_to_cure = 4
+        elif r == "Archivist":
+            players[plyr].max_cards = 8
+        elif r == "Generalist":
+            players[plyr].actions_per_turn = 5
     return
 
 
@@ -623,14 +658,15 @@ event_card_list = [
     "Airlift",
     "Resilient Population",
 ]
-poss_roles = [
-    "Scientist",
-    "Researcher",
-    "Quarantine Specialist",
-    "Medic",
-    "Dispatcher",
-    "Operations Expert",
-]  # "Contingency Planner", #(not setup yet)
+poss_roles = list(roles.keys())
+# [
+#     "Scientist",
+#     "Researcher",
+#     "Quarantine Specialist",
+#     "Medic",
+#     "Dispatcher",
+#     "Operations Expert",
+# ]  # "Contingency Planner", #(not setup yet)
 
 assign_roles(player_list)
 
@@ -675,11 +711,11 @@ infect_discard = card_deck(None)
 ###############################################################################
 # Initial Infections
 
-print("Roles have been assigned:")
+print("\nRoles have been assigned:")
 for p in players:
     print("%s: %s" %(players[p].name,players[p].role))
 
-print("Cities will now be infected")
+print("\nCities will now be infected")
 
 # Infect (3) cities with 3 disease cubes, (3) with 2 cubes, (3) with 1 cube
 for n_cubes in range(3, 0, -1):
@@ -720,13 +756,15 @@ player_ind = player_list.index(active_player.name)
 
 command_list = [
     "infection_status(city='all')",
-    "player_status()",
+    "player_status(p_name='')",
     "team_status()",
     "card_status()",
     "discarded_player_cards()",
     "discarded_infection_cards()",
     "locate_players()",
     "adjacent_cities(city=location)",
+    "summary_status()",
+    "detail_status()",
     "list_commands()",
 ]
 
@@ -770,10 +808,10 @@ def player_status(p_name=""):
 
 def team_status():
     print("\nCurrent Game Status:\n")
-    print("Outbreaks: %i/8" %outbreaks)  #Code smell: Magic number
+    print("Outbreaks: %i/%i" %(outbreaks, MAX_OUTBREAKS))
     print("Cubes Remaining:\n")
     for disease in disease_list:
-        print("%s: %i/24" %(disease, disease_cubes[disease]))  #Code smell: Magic number
+        print("%s: %i/%i" %(disease, disease_cubes[disease], QTY_CUBES))
     print("Player cards remaining: %i (%i/%i epidemics remaining)"
           %(len(player_deck.cards), num_epidemics,epidemics[difficulty])
     )
@@ -804,17 +842,17 @@ def card_status():
 def discarded_player_cards():
     for crd in player_discard:
         try:
-            print(crd.value + " (" + crd.disease + ")")
+            print("%s (%s)" %(crd.value, crd.disease))
         except:
             try:
-                print(crd.value + ": " + crd.instruction)
+                print("%s: %s" %(crd.value, crd.instruction))
             except:
                 print(crd.value)
 
 
 def discarded_infection_cards():
     for crd in infect_discard:
-        print(crd.value + " (" + crd.disease + ")")
+        print("%s (%s)" %(crd.value, crd.disease))
 
 
 def locate_players():
@@ -877,23 +915,24 @@ def card_limit(player_name):
     global players
     global cities
     global player_discard
-
-    while len(players[player_name].cards.keys()) > 7:
+    
+    max_cards = players[player_name].max_cards
+    
+    while len(players[player_name].cards.keys()) > max_cards:
         print(
-            "Player %s has %s cards in hand (7 allowed)"
-            % (player_name, str(len(players[player_name].cards.keys())))
+            "Player %s has %i cards in hand (%i allowed)"
+            % (player_name, 
+               len(players[player_name].cards.keys()),
+               max_cards)
         )
-        #     "Player "
-        #     + player_name
-        #     + " has "
-        #     + str(len(players[player_name].cards.keys()))
-        #     + " cards in hand (7 allowed):"
-        # )
+
         for c in players[player_name].cards.keys():
             try:
                 print("%s (%s)" %(c, players[player_name].cards[c].disease))
             except:
-                print("%s (%s)" %(c, players[player_name].cards[c].instruction))
+                print("%s (%s)" 
+                      %(c, players[player_name].cards[c].instruction)
+                      )
         print("Enter city card to discard or event card to play.")
         crd = input().strip()
 
@@ -916,7 +955,7 @@ def check_eradicated():
     for dis in cured:
         if dis in eradicated:
             continue
-        if disease_cubes[dis] == 24:
+        if disease_cubes[dis] == QTY_CUBES:
             eradicated.append(dis)
             print("%s has been eradicated" % dis)
 
@@ -995,32 +1034,32 @@ def one_quiet_night():
 
 def forecast():
     global infect_deck
-    top_6_list = []
+    top_list = []
     infection_status()
     print("\n")
-    print("Top 6 cards are:")
-    for c_ind in range(6):
+    print("Top %i cards are:" %FORECAST_LIMIT)
+    for c_ind in range(FORECAST_LIMIT):
         crd = infect_deck.draw_top()
         print("%s (%s)" %(crd.value, crd.city.default_disease))
-        top_6_list.append(crd)
+        top_list.append(crd)
 
-    new_6_list = []
+    new_list = []
     c_new_ind = 1
-    while c_new_ind in range(1, 7):
+    while c_new_ind in range(1, FORECAST_LIMIT+1):
         print("Enter card for position %i (1 will be drawn next)" %c_new_ind)
         c_val = input().strip()
         if c_val == "Stop" or c_val == "stop":
-            infect_deck = combine([card_deck(top_6_list), infect_deck])
+            infect_deck = combine([card_deck(top_list), infect_deck])
             return False
-        for crd in top_6_list:
+        for crd in top_list:
             if crd.value == c_val:
-                new_6_list.append(crd)
+                new_list.append(crd)
                 break
-        if len(new_6_list) == c_new_ind:
+        if len(new_list) == c_new_ind:
             c_new_ind += 1
         else:
             print("Card value not recognized.")
-    infect_deck = combine([card_deck(new_6_list), infect_deck])
+    infect_deck = combine([card_deck(new_list), infect_deck])
     return True
 
 
@@ -1074,6 +1113,7 @@ def resilient_population():
 # Actions
 
 # action function is called each time actions remain for a player's turn
+# argument i (int) is number of actions remaining
 # action returns number of successfully completed actions
 def action(i):
     global players
@@ -1126,7 +1166,7 @@ def action(i):
                     if plyr_name in rem_cmd[: len(plyr_name)]:
                         dest_city_name = rem_cmd[
                             rem_cmd.index(plyr_name) + len(plyr_name) + 1 :
-                        ]
+                        ] ##Code smells: change to split
                         if dest_city_name not in cities.keys():
                             continue
                         else:
@@ -1376,14 +1416,14 @@ def action(i):
             print(c, cd[c][0])
 
         # Typically 5 cards of same disease are required to cure
-        # With Scientist, only 4 cards are required
-        cards_required = 5
-        if players[current_player.name].role == "Scientist":
-            cards_required = 4
+        # Scientist special ability moved to player attribute
+        cards_required = current_player.cards_to_cure
 
         # Determine which disease the player has the most of
         # Since at least 4 cards of the same disease are required and the
         # hand limit is 7, at most one disease should be curable per player per turn
+        # With Archivist expansion role, possible to have 8 cards in hand and
+        # one on table, but still not enough to have 5 of two diseases
         cards_attained = max(disease_num_cards.values())
         cure_disease = [
             d_max
@@ -1452,7 +1492,7 @@ def action(i):
             disease_name = current_player.location.default_disease
             print(
                 "No disease recognized.  Checking default disease for %s (%s)"
-                %(current_player.location.name, disease_name)
+                %(current_player.location.name, str(disease_name))
             )
         if not (current_player.location.diseases[disease_name] > 0):
             print(
@@ -1492,7 +1532,7 @@ def action(i):
         global player_discard
 
         try:
-            space_ind = command.index(" ")
+            space_ind = command.index(" ") #Code smells: Use split
             city_player = command[space_ind + 1 :]
             #                    print("city_player: "+city_player)
             city_name = ""
@@ -1522,6 +1562,11 @@ def action(i):
             return 0
 
         # Ensure both players are in the same city
+        try:
+            assert players[player_name].location != ""
+        except:
+            print("Receiving player name not recognized")
+            return 0
         if current_player.location != players[player_name].location:
             print(
                 "Giving and receiving players must be in the same city "
@@ -1548,7 +1593,7 @@ def action(i):
 
         card_limit(player_name)
 
-        return 1
+        return 1  #Executes if share() call is successful (counts as 1 move)
 
     # Take Card (from Researcher only)
     def take(command):
@@ -1605,7 +1650,7 @@ def action(i):
     # Retrieve Event Card (Contingency Planner only)
     def retrieve(command):
         print("Retrieve not yet available.")
-        return 0
+        return i
 
     command = input().strip()
     cmd = command.lower()
@@ -1634,7 +1679,7 @@ def action(i):
         elif "retrieve" in cmd:
             return i + retrieve(command)
         elif "skip" in cmd:
-            return 4  #Magic number, convert to constant NUM_TURNS
+            return current_player.actions_per_turn
         else:
             print("Command not recognized")
             return i
@@ -1642,12 +1687,13 @@ def action(i):
 
 win = False
 
-# Game ends when outbreaks reach 8, player deck runs out of cards, or any disease cube supply is exhausted
+# Game ends when outbreaks reach MAX_OUTBREAKS, 
+#player deck runs out of cards, or any disease cube supply is exhausted
 # (or player wins)
 j = 0  # Turns
 while (
     not win
-    and outbreaks < 8  #Magic number, convert to MAX_OUTBREAKS
+    and outbreaks < MAX_OUTBREAKS
     and len(player_deck.cards) > 0
     and min([a for a in disease_cubes.values()]) >= 0
 ):
@@ -1660,41 +1706,54 @@ while (
     detail_status()
 
     print("Player %s's turn" %active_player.name)
-
+    
+    #Flag - infect_cities will generally happen unless stopped by event card.
+    #       reset at the start of each player's turn
     infect_cities = True
 
-    # Complete (4) actions
+    # Complete (ACTIONS_PER_TURN) actions
     i = 0
-    while i < 4:
-        win = check_win()
+    while i < current_player.actions_per_turn:  ###ACTIONS_PER_TURN
+        #Check whether win condition achieved before action
+        win = check_win()  #Code smells - win variable not used, is necessary?
         if check_win():
             break
 
-        print("Complete (%i) Actions" %(4 - i))
-        i = action(i)
+        print("Complete (%i) Actions" %(current_player.actions_per_turn - i))
+        i = action(i) #Pass i (actions remaining this turn). action() returns
+                        # 0 or 1 depending on whether a valid command was passed
 
-    win = check_win()
+    win = check_win()  #Code smells - win variable not used, is necessary?
     if win:
         break
 
+    #q_dict {disease1:[quarantined_city_1, q_city_2,...], disease2:[...]}
+    #Empty q_dict
     q_dict = {}
     for disease in disease_list:
         q_dict[disease] = []
+        #If the disease is eradicated, city.infect() will not infect cities
         if disease in eradicated:
             continue
+        #Loop through all cities, not just cities where default_disease==disease
+        # in case an outbreak at a border city has caused non-default infection
         for cit in cities.keys():
             cities[cit].quarantine[disease] = False
 
     for p_name in players.keys():
+        #Add all cities at and around Q.S. to quarantine dictionary
         if players[p_name].role == "Quarantine Specialist":
             for disease in disease_list:
                 q_dict[disease].append(players[p_name].location)
                 q_dict[disease] += players[p_name].location.neighbors
+        #For any cured disease, prevent placement of new disease cubes in
+        # the city where the Medic is located (part of auto-heal ability)
         if players[p_name].role == "Medic":
             for disease in cured:
                 q_dict[disease].append(players[p_name].location)
 
     for disease in q_dict.keys():
+        #Assign quarantine attribute for applicable diseases to all cities in q_dict
         for cit in q_dict[disease]:
             cit.quarantine[disease] = True
 
@@ -1702,9 +1761,11 @@ while (
     cmd = input().strip()
     if "play" in cmd.lower():
         try:
-            space_ind = cmd.index(" ")
+            space_ind = cmd.index(" ")  #Code smells: replace with split
+            # figure out which card is to be played
             event_card_value = cmd[space_ind + 1 :]
             owner_name = ""
+            # determine whether card is in any player's hand
             for plyr in player_list:
                 if event_card_value in players[plyr].cards.keys():
                     owner_name = plyr
@@ -1714,8 +1775,9 @@ while (
             else:
                 crd = players[owner_name].play_card(event_card_value)
                 try:
+                    #Confirm card was played
                     assert event_card_value not in players[owner_name].cards.keys()
-                    player_discard.add_card(crd)
+                    player_discard.add_card(crd)  #Code smells: possibly add the discard functionality to player.play_card()
                 except:
                     print("Fail :(")
         except:
@@ -1815,7 +1877,7 @@ while (
     j += 1
 
 
-if outbreaks >= 8:  #convert to constant MAX_OUTBREAKS
+if outbreaks >= MAX_OUTBREAKS:  
     print("Game over - too many outbreaks")
 if len(player_deck.cards) == 0:
     print("Game over - no player cards left")

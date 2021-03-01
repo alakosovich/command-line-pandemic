@@ -1,0 +1,4 @@
+Game Functionality
+- Contingency Planner role
+- Operations Expert 2nd ability
+- Save/Load game ability (+ Autosave)
