@@ -546,6 +546,12 @@ for (c, p, d) in city_data:
 
 assign_diseases(disease_dict)
 
+research_stations = 6
+
+research_stations = cities["Atlanta"].build(research_stations)
+
+epidemics = {"easy": 4, "intermediate": 5, "hard": 6}
+
 # for nghbr in cities["New York"].neighbors:
 #    print(nghbr.name)
 #
@@ -635,20 +641,22 @@ for i in range(1, num_players + 1):
     player_list.append(input().strip())
 
 print("Enter Difficulty (Easy, Intermediate, Hard):")
-difficulty = input().strip()
+while True:
+    try:
+        difficulty = input().strip().lower()
+        assert difficulty in epidemics.keys()
+        break
+    except:
+        print("Difficulty not recognized")
 
 
 ###############################################################################
 # Card Decks:
 
 
-research_stations = 6
-
-research_stations = cities["Atlanta"].build(research_stations)
-
 print("Constructing Card Decks...")
 
-epidemics = {"Easy": 4, "Intermediate": 5, "Hard": 6}
+
 num_epidemics = epidemics[difficulty]
 
 event_card_list = [
@@ -713,7 +721,10 @@ infect_discard = card_deck(None)
 
 print("\nRoles have been assigned:")
 for p in players:
-    print("%s: %s" %(players[p].name,players[p].role))
+    role = players[p].role
+    print("\n%s: %s" %(players[p].name, role))
+    for ability in roles[role]:
+        print("%s: %s" %(role, ability))
 
 print("\nCities will now be infected")
 
@@ -750,11 +761,11 @@ print("Player '%s' will go first" %max_player.name)
 active_player = max_player
 player_ind = player_list.index(active_player.name)
 
-
 ###############################################################################
 # Player Utilities
 
 command_list = [
+    "list_actions()",
     "infection_status(city='all')",
     "player_status(p_name='')",
     "team_status()",
@@ -768,6 +779,30 @@ command_list = [
     "list_commands()",
 ]
 
+def list_actions():
+    print("\nActions available to active player:")
+    print("\nPlay: Play Event Card from any player's hand "
+          "(doesn't count as an action)"
+          "\n'Play [card_name]'")
+    print("\n'Move [player_name]* [city_name]' \t|| "
+          "*[player_name] only used by Dispatcher")
+    print("\nHeal: Remove disease cubes from current city"
+          "\n'Heal [disease]*' \t|| "
+          "*[disease] optional, reverts to default_disease]")
+    print("\nShare Knowledge: Give city card to another player."
+          "\nBoth players must be in the same city."
+          "\nUnless giving player is 'Researcher', both players must be in "
+          "the city matching the card being shared."
+          "\n'Share [city_card_name] [player_name]'")
+    print("\nTake Knowledge: Take city card from 'Researcher'"
+          "\nActive player and 'Researcher' must be in the same city"
+          "\n'Take [city_card_name]'")
+    print("\nCure Disease: "
+          "Turn in cards from active player's hand to cure a disease"
+          "\n'Cure [disease]*' \t|| *[disease] optional")
+    print("\nBuild Research Station: Requires city card matching current city"
+          "\n'Build'")
+    print("\nType 'list_commands()' for a summary of available information")
 
 def infection_status(city="All"):
     if city != "All":
@@ -1487,7 +1522,7 @@ def action(i):
         # Figure out which disease to treat, if multiple
         try:
             space_ind = command.index(" ")
-            disease_name = command[space_ind + 1 :]
+            disease_name = command[space_ind + 1 :]  #Feature: add support for removing multiple disease cubes
         except:
             disease_name = current_player.location.default_disease
             print(
@@ -1686,6 +1721,8 @@ def action(i):
 
 
 win = False
+
+list_actions()
 
 # Game ends when outbreaks reach MAX_OUTBREAKS, 
 #player deck runs out of cards, or any disease cube supply is exhausted
