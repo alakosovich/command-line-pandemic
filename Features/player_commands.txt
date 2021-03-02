@@ -1,0 +1,3 @@
+Player commands
+-research_stations() shows locations of research stations
+-list special abilities, default to show all players 

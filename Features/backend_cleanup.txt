@@ -1,0 +1,8 @@
+Backend Cleanup
+- Define "Role" class. Attrs: {"Name", [Special Abilities], boolean base_game, boolean expansion}
+- Make "Card" class, have event_card, epidemic_card, city_card, infection_card inherit from Card
+- Convert all class names to UpperCamelCase
+- Allow input commands to accept lowercase or uppercase
+- Organize game info, global functions, gameplay, etc. into separate modules
+- Remove dead code
+- End hardcoding
