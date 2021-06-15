@@ -83,6 +83,7 @@ from objects import (CardDeck,
                     InfectCard,
                     City,
                     Player,
+                    Disease,
                     )
 
 from board_setup import (assign_roles,
@@ -128,15 +129,15 @@ current_player = None
 infect_cities = True
 
 
-disease_cubes = {}
+disease_cubes = {}  # Change to attribute of Disease object
 for disease in disease_list:
-    disease_cubes[disease] = QTY_CUBES
+    disease_cubes[disease] = QTY_CUBES  ## Change to use Disease object
 
 outbreaks = 0
 infection_rate = infection_rates.pop(0)
 
-cured = []
-eradicated = []
+cured = []  ## Change to attribute of Disease object
+eradicated = []  ## Change to attribute of Disease object
 
 
 ###############################################################################
@@ -153,32 +154,21 @@ city_info_list = []
 for (c, p, d) in city_data:
     city_info_list.append((c, p))
 
-disease_dict = {}
+# disease_dict = {"Black":ptr to Black Disease object, ...}
+diseases = {}
+for disease_name in disease_list:
+    diseases[disease_name] = Disease(disease_name)
 
+# city_disease_dict = {"London":ptr to Blue Disease object, ...}
+city_disease_dict = {}
 for (c, p, d) in city_data:
-    disease_dict[c] = d
+    city_disease_dict[c] = diseases[d]
 
 cities = generate_cities(city_info_list)
-
 cities = generate_neighbors(neighbor_pairs, cities)
-
-cities = assign_diseases(disease_dict, cities)
-
-# disease_dict = {"New York":"Blue","Montreal":"Blue","Washington":"Blue","Chicago":"Blue",
-#                "Atlanta":"Yellow","Miami":"Yellow","Mexico City":"Yellow","Los Angeles":"Yellow",
-#                "San Francisco":"Red"}
-
-
-
-
+cities = assign_diseases(city_disease_dict, cities)
 
 research_stations = cities["Atlanta"].build(research_stations)
-
-
-
-
-
-
 
 
 
@@ -322,6 +312,38 @@ player_ind = player_list.index(active_player.name)
 
 
 
+def impose_quarantine():
+    #q_dict {disease1:[quarantined_city_1, q_city_2,...], disease2:[...]}
+    #Empty q_dict
+    q_dict = {}
+    for disease_name in diseases.keys():
+        q_dict[disease_name] = []
+        #If the disease is eradicated, city.infect() will not infect cities
+        if diseases[disease_name].eradicated:
+            continue
+        #Loop through all cities, not just cities where default_disease==disease
+        # in case an outbreak at a border city has caused non-default infection
+        for cit in cities.keys():
+            cities[cit].quarantine[disease] = False
+
+    for p_name in players.keys():
+        #Add all cities at and around Q.S. to quarantine dictionary
+        if players[p_name].role == "Quarantine Specialist":
+            for disease_name in diseases.keys():
+                q_dict[disease_name].append(players[p_name].location)
+                q_dict[disease_name] += players[p_name].location.neighbors
+        #For any cured disease, prevent placement of new disease cubes in
+        # the city where the Medic is located (part of auto-heal ability)
+        if players[p_name].role == "Medic":
+            for disease in diseases.values():
+                if disease.cured:
+                    q_dict[disease.name].append(players[p_name].location)
+
+    for disease_name in q_dict.keys():
+        #Assign quarantine attribute for applicable diseases to all cities in q_dict
+        for cit in q_dict[disease_name]:
+            cit.impose_quarantine(diseases[disease_name])
+
 
 ###############################################################################
 ###############################################################################
@@ -376,6 +398,11 @@ def action(i):
         global active_player
         global current_player
 
+        def action_move(active_player, dest_city):
+            cities[active_player.location.name].move_from(active_player)
+            cities[dest_city.name].move_to(active_player)
+            active_player.move(cities[dest_city.name])
+
         if current_player.role == "Dispatcher":
             try:
                 space_ind = command.index(" ")  #Code smells: change to split
@@ -385,7 +412,7 @@ def action(i):
                     if plyr_name in rem_cmd[: len(plyr_name)]:
                         dest_city_name = rem_cmd[
                             rem_cmd.index(plyr_name) + len(plyr_name) + 1 :
-                        ] ##Code smells: change to split
+                        ] ## Code smells: change to split
                         if dest_city_name not in cities.keys():
                             continue
                         else:
@@ -402,7 +429,7 @@ def action(i):
                 print("Current player is 'Dispatcher'. Enter player to move:")
                 act_plyr_name = input().strip()
                 try:
-                    active_player = players[act_plyr_name]  ##Switch to players.get(act_plyr_name, current_player.name)
+                    active_player = players[act_plyr_name]  ## Switch to players.get(act_plyr_name, current_player.name)
                     print("Active player is %s" %act_plyr_name)
 
                 except:
@@ -416,7 +443,7 @@ def action(i):
 
         else:
             try:
-                space_ind = command.index(" ")  ##Switch to split
+                space_ind = command.index(" ")  ## Switch to split
                 dest_city_name = command[space_ind + 1 :]
             except:
                 print("Command name not recognized.")
@@ -433,15 +460,7 @@ def action(i):
                 "Drive/Ferry from %s to %s"
                 %(active_player.location.name, dest_city.name)
             )
-            active_player.move(dest_city.name)
-
-        #            #Medic 2nd ability
-        #            #ADD SEPARATE FUNCTION (& RELOCATE CALL TO END OF 'MOVE' FUNCTION??)
-        #            ###################################################################
-        #            if active_player.role == "Medic":
-        #                for d in cured:
-        #                    dest_city.diseases[d] = 0
-        #            return 1
+            action_move(active_player, dest_city)
 
         # Shuttle Flight (1 move) - must be research station in both cities
         elif active_player.location.rs and dest_city.rs:
@@ -449,7 +468,7 @@ def action(i):
                 "Shuttle Flight from %s to %s"
                 %(active_player.location.name, dest_city.name)
             )
-            active_player.move(dest_city.name)
+            action_move(active_player, dest_city)
 
         # Dispatcher ability: Move any pawn (active) to any city with another pawn
         elif current_player.role == "Dispatcher" and len(dest_city.pawns) > 0:
@@ -459,12 +478,10 @@ def action(i):
                 active_player.location.name,
                 dest_city.name)
             )
-            active_player.move(dest_city.name)
+            action_move(active_player, dest_city)
 
         else:
-
             try:
-
                 # Direct Flight - player has destination city card
                 if dest_city.name in current_player.cards.keys():
                     print(
@@ -474,7 +491,7 @@ def action(i):
                     )
                     con = input().strip()
                     if con.lower() == "y":
-                        active_player.move(dest_city.name)
+                        action_move(active_player, dest_city)
                         crd = current_player.play_card(dest_city.name)
                         player_discard.add_card(crd)
 
@@ -499,7 +516,7 @@ def action(i):
                     con = input().strip()
                     if con.lower() == "y":
                         origin_city_name = active_player.location.name
-                        active_player.move(dest_city.name)
+                        action_move(active_player, dest_city)
                         crd = current_player.play_card(origin_city_name)
                         player_discard.add_card(crd)
 
@@ -525,7 +542,7 @@ def action(i):
                     print("Enter card to discard, or anything else to cancel.")
                     crd_name = input().strip()
                     try:
-                        current_player.move(dest_city.name)
+                        action_move(current_player, dest_city)
                         crd = current_player.play_card(crd_name)
                         player_discard.add_card(crd)
                     except:
@@ -948,35 +965,7 @@ while (
     if win:
         break
 
-    #q_dict {disease1:[quarantined_city_1, q_city_2,...], disease2:[...]}
-    #Empty q_dict
-    q_dict = {}
-    for disease in disease_list:
-        q_dict[disease] = []
-        #If the disease is eradicated, city.infect() will not infect cities
-        if disease in eradicated:
-            continue
-        #Loop through all cities, not just cities where default_disease==disease
-        # in case an outbreak at a border city has caused non-default infection
-        for cit in cities.keys():
-            cities[cit].quarantine[disease] = False
-
-    for p_name in players.keys():
-        #Add all cities at and around Q.S. to quarantine dictionary
-        if players[p_name].role == "Quarantine Specialist":
-            for disease in disease_list:
-                q_dict[disease].append(players[p_name].location)
-                q_dict[disease] += players[p_name].location.neighbors
-        #For any cured disease, prevent placement of new disease cubes in
-        # the city where the Medic is located (part of auto-heal ability)
-        if players[p_name].role == "Medic":
-            for disease in cured:
-                q_dict[disease].append(players[p_name].location)
-
-    for disease in q_dict.keys():
-        #Assign quarantine attribute for applicable diseases to all cities in q_dict
-        for cit in q_dict[disease]:
-            cit.quarantine[disease] = True
+    
 
     print("Last chance to play event card before 'Draw (2) Player Cards' step")
     cmd = input().strip()
@@ -1003,6 +992,8 @@ while (
                     print("Fail :(")
         except:
             print("Event card value not recognized.")
+
+    impose_quarantine()
 
     # Draw (2) player cards
     for draw_ind in range(2):
@@ -1051,26 +1042,7 @@ while (
 
     # MOVE THIS CODE TO operations.impose_quarantine()
     # q_dict = {"Red":[list of cities under red quarantine], "Blue":[...]}
-    q_dict = {}
-    for disease in disease_list:
-        q_dict[disease] = []
-        if disease in eradicated:
-            continue
-        for cit in cities.keys():
-            cities[cit].quarantine[disease] = False
-
-    for p_name in players.keys():
-        if players[p_name].role == "Quarantine Specialist":
-            for disease in disease_list:
-                q_dict[disease].append(players[p_name].location)
-                q_dict[disease] += players[p_name].location.neighbors
-        if players[p_name].role == "Medic":
-            for disease in cured:
-                q_dict[disease].append(players[p_name].location)
-
-    for disease in q_dict.keys():
-        for cit in q_dict[disease]:
-            cit.quarantine[disease] = True
+    impose_quarantine()
 
     # Infect (infection_rate) cities
     if infect_cities:
@@ -1078,9 +1050,9 @@ while (
             inf_crd = infect_deck.draw_top()
             outbreaks = inf_crd.play(outbreaks)
             infect_discard.add_card(inf_crd)
-            for disease in q_dict.keys():
-                for cit in q_dict[disease]:
-                    cit.quarantine[disease] = True
+            for disease_name in q_dict.keys():
+                for cit in q_dict[disease_name]:
+                    cit.impose_quarantine(diseases[disease_name])
 
     # Increment player index for next turn
     player_ind = (player_ind + 1) % num_players
@@ -1091,5 +1063,5 @@ if outbreaks >= MAX_OUTBREAKS:
     print("Game over - too many outbreaks")
 if len(player_deck.cards) == 0:
     print("Game over - no player cards left")
-if min([a for a in disease_cubes.values()]) < 0:
+if min([a for a in disease_cubes.values()]) < 0:  ## Change to check Disease.cubes for each disease
     print("Game over - out of disease cubes")

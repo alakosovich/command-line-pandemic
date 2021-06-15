@@ -19,8 +19,8 @@ Created on Sat Mar  6 08:42:06 2021
 
 # global player_discard
 global infection_rates
-global QTY_CUBES
-global FORECAST_LIMIT
+
+from constants import (QTY_CUBES, FORECAST_LIMIT)
 
 from objects import CardDeck
 

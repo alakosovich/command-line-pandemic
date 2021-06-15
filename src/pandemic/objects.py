@@ -10,11 +10,10 @@ from constants import (ACTIONS_PER_TURN,
                        CUBE_LIMIT,
                        MAX_CARDS_IN_HAND,
                        CARDS_TO_CURE,
+                       QTY_CUBES,
                        )
 
 from initialize import roles
-
-global cities
 
 class CardDeck(object):
     def __init__(self, card_list):
@@ -81,10 +80,23 @@ class EventCard(object):
     # Airlift: Move any player to any city
     # Resilient Population: Remove any card in the infection discard pile from the game
 
+    event_dict = {"Government Grant":["Build a research station in any city",
+                                     "government_grant()"],
+                  "One Quiet Night":["Skip the Infection step",
+                                     "one_quiet_night()"],
+                  "Forecast":["Draw, observe, and rearrange top (6) infection "
+                             "cards",
+                             "forecast()"],
+                  "Airlift":["Move any player to any city","airlift()"],
+                  "Resilient Population":["Remove any card in the infection "
+                                          "discard pile from the game",
+                                          "resilient_population()"],
+                  }
+
     def __init__(self, card_value):
         self.value = card_value
         self.retrieved = False  #Dormant code - awaiting Contingency Planner implementation
-        if self.value == "Government Grant":
+        if self.value == "Government Grant":  ## Convert to use event_dict instead of if-elif-else
             self.instruction = "Build a research station in any city"
             self.playfunc = "government_grant()"
         elif self.value == "One Quiet Night":
@@ -109,12 +121,14 @@ class EventCard(object):
 
 
 class CityCard(object):
-
     def __init__(self, city):
         self.value = city.name
-        self.retrieved = False  #Dormant code - awaiting expansion roles implementation
+        self.retrieved = False  #Dormant code - awaiting archivist expansion roles implementation
         self.city = city
         self.disease = city.default_disease
+
+    def retrieve(self):
+        self.retrieved = True  #Dormant code - awaiting archivist expansion roles implementation
 
 
 class EpidemicCard(object):
@@ -127,10 +141,6 @@ class EpidemicCard(object):
 
 
 class InfectCard(object):
-
-    # Only required for "Field Operative" Expansion Role
-    #    retrieved = False
-
     def __init__(self, city):
         self.city = city
         self.value = city.name
@@ -166,82 +176,89 @@ class City(object):
     def move_to(self, plyr):
         self.pawns.append(plyr)
 
-    def infect(self, outbreaks, disease="", quantity=1):
-        if disease == "":
+    def infect(self, outbreaks, disease=None, quantity=1):  ## Still need to update infect() call in action code to pass Disease pointer rather than name
+        try:
+            assert dtype(disease) == Disease
+        except:
             disease = self.default_disease
-        if self.quarantine[disease]:
+        if self.quarantine[disease.name]:
             print("\n%s is under quarantine." %self.name)
             return outbreaks
-        elif disease in eradicated:
+        elif disease.eradicated:
             print(
                 "\n%s is eradicated and will not infect %s" 
-                  %(disease, self.name)
+                  %(disease.name, self.name)
                   )
             return outbreaks
         print("\n%s (%s) has been infected with %i %s cube(s) [%s total]"
               %(self.name,
-                self.default_disease, 
+                self.default_disease.name, 
                 quantity, 
                 disease,
-                self.diseases[disease]+quantity
+                self.diseases[disease.name]+quantity
                 )
               )
 
-        # May need to move this to game function in order to track outbreaks
-        if self.diseases[disease] + quantity < CUBE_LIMIT + 1:
-            self.diseases[disease] += quantity
-            disease_cubes[disease] -= quantity
-            print("%s disease cubes changes from %i to %i"  #Code smell: duplicate print statement with heal()
-                  %(disease,
-                    disease_cubes[disease] + quantity,
-                    disease_cubes[disease])
+        # outbreak will not occur
+        if self.diseases[disease.name] + quantity < CUBE_LIMIT + 1:
+            self.diseases[disease.name] += quantity
+            disease.infect(quantity)
+            print("%s disease cubes changes from %i to %i"  ## Code smell: duplicate print statement with heal()
+                  %(disease.name,
+                    disease.cubes + quantity,
+                    disease.cubes)
                   )
+        # outbreak will occur
         else:
             print("Outbreak in %s!" %self.name)
-            self.diseases[disease] = CUBE_LIMIT
+            self.diseases[disease.name] = CUBE_LIMIT
             outbreaks += 1
-            self.quarantine[disease] = True
+            self.impose_quarantine(disease)  #Temporarily quarantine initial city while outbreak propagates
             for neighbor in self.neighbors:
                 outbreaks = neighbor.infect(outbreaks, disease=disease)
-            self.quarantine[disease] = False
+            self.lift_quarantine(disease)  #Remove temporary quarantine
         return outbreaks
 
-    def heal(self, disease="", quantity=1):
-        if disease == "":
+    def heal(self, disease=None, quantity=1):  ## Still need to update heal() call in action code to pass Disease pointer rather than name
+        try:
+            assert dtype(disease) == Disease
+        except:
             disease = self.default_disease
-        self.diseases[disease] -= quantity
-        disease_cubes[disease] += quantity
-        print("%s disease cubes changes from %i to %i"  #Code smell: duplicate
+        self.diseases[disease.name] -= quantity
+        disease.heal(quantity)
+        print("%s disease cubes changes from %i to %i"  ## Code smell: duplicate
               %(disease,
-                disease_cubes[disease] - quantity,
-                disease_cubes[disease])
+                disease_cubes[disease.name] - quantity,
+                disease_cubes[disease.name])
               )
-
-    #    def infect_neighbors(self, disease, quantity = 1):
-    #        for neighbor in self.neighbors:
-    #            neighbor.infect(disease)
 
     def build(self, research_stations):
         self.rs = True
         research_stations -= 1
         return research_stations
 
-    #        return research_stations - 1
-
     def remove_rs(self, research_stations):
         self.rs = False
         research_stations += 1
         return research_stations
 
+    def impose_quarantine(self, disease):
+        self.quarantine[disease.name] = True
+
+    def lift_quarantine(self, disease):
+        self.quarantine[disease.name] = False
+
 
 class Player(object):
-    global cities
     def __init__(self,
                  player_name,
                  role,
                  actions = ACTIONS_PER_TURN,
                  cards = CARDS_TO_CURE,
-                 max_cards = MAX_CARDS_IN_HAND):
+                 max_cards = MAX_CARDS_IN_HAND,
+                 reserve_event = False,
+                 reserve_city = False,
+                 collect_cubes = False):
         self.name = player_name
         self.role = role
         self.special_ability = roles[role]
@@ -249,6 +266,10 @@ class Player(object):
         self.cards_to_cure = cards
         self.max_cards = max_cards
         self.cards = {}
+        self.reserve_event = reserve_event  ## For contingency planner role
+        self.reserve_city = reserve_city  ## For archivist role
+        self.collect_cubes = collect_cubes  ## For field operative role
+        self.reserve_card = None
         self.location = None
 
     def set_location(self, location):
@@ -262,14 +283,8 @@ class Player(object):
             self.cards[c.value] = c
         return c
 
-    def move(self, new_city_name):
-        cities[self.location.name].move_from(self)
-        self.location = cities[new_city_name]
-        cities[new_city_name].move_to(self)
-
-    #def assign_role(self, role):
-    #    self.role = role
-    #    self.special_ability = roles[role]
+    def move(self, new_city):
+        self.location = new_city
 
     def play_card(self, card_name):
         p_c = self.cards[card_name]
@@ -280,3 +295,23 @@ class Player(object):
             return None
         del self.cards[card_name]
         return p_c
+
+
+class Disease(object):
+    def __init__(self, disease_name):
+        self.name = disease_name
+        self.cured = False
+        self.eradicated = False
+        self.cubes = QTY_CUBES
+
+    def cure(self):
+        self.cured = True
+
+    def eradicate(self):
+        self.eradicated = True
+
+    def heal(self, n_cubes):
+        self.cubes += n_cubes
+
+    def infect(self, n_cubes):
+        self.cubes -= n_cubes
